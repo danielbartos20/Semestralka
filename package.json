@@ -1,0 +1,36 @@
+{
+  "name": "semestralka",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "node --watch index.js",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "node db/migrate.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/danielbartos20/Semestralka.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/danielbartos20/Semestralka/issues"
+  },
+  "homepage": "https://github.com/danielbartos20/Semestralka#readme",
+  "devDependencies": {
+    "dotenv": "^16.4.5",
+    "drizzle-kit": "^0.31.10"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.11.1",
+    "bcryptjs": "^2.4.3",
+    "better-sqlite3": "^11.1.2",
+    "drizzle-orm": "^0.45.2",
+    "ejs": "^6.0.1",
+    "hono": "^4.4.12"
+  }
+}
