@@ -3,7 +3,7 @@ import { serve } from '@hono/node-server';
 import ejs from 'ejs';
 import bcrypt from 'bcryptjs';
 import { db } from './db/db.js';
-import { users } from './db/schema.js';
+import { users, chats, chatUsers } from './db/schema.js';
 import { eq } from 'drizzle-orm';
 import { getCookie, setCookie, deleteCookie } from 'hono/cookie';
 
@@ -58,7 +58,6 @@ app.post('/register', async function (c) {
     };
 });
 
-
 app.get('/login', async function (c) {
     const {message, type} = getFlashMessage(c);
     const html = await ejs.renderFile('./views/login.ejs', {message, type});
@@ -101,6 +100,34 @@ app.get('/logout', function (c) {
     return c.redirect('/')
 });
 
+app.get('/chats', async function (c) {
+    const loggedUser = await getLoggedUser(c);
+    if (!loggedUser) {
+        setFlashMessage(c, 'Pro zobrazení chatů se musíte přihlásit.', 'error');
+        return c.redirect('/login');
+    }; 
+    const {message, type} = getFlashMessage(c);
+    const allChats = await db.select().from(chats);
+    const html = await ejs.renderFile('./views/chats.ejs', {message, type, user: loggedUser, chats: allChats});
+    return c.html(html);
+});
+
+app.post('/chats', async function (c) {
+    const loggedUser = await getLoggedUser(c);
+    if (!loggedUser) {
+        return c.redirect('/login');
+    };
+    const body = await c.req.parseBody();
+    const name = body.name;
+    if(name) {
+        const result = await db.insert(chats).values({name}).returning();
+        const newChat = result[0];
+        await db.insert(chatUsers).values({chatId: newChat.id, userId: loggedUser.id});
+        setFlashMessage(c, 'Chat vytvořen.', 'success');
+    };
+    return c.redirect('/chats');
+});
+
 
 
 async function getLoggedUser(c) {
@@ -128,7 +155,7 @@ function getFlashMessage(c) {
         type = '';
     };
     return { message, type };
-}
+};
 
 serve({
     fetch: app.fetch,
