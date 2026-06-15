@@ -11,7 +11,6 @@ const app = new Hono();
 const port = 8080;
 
 
-
 app.get('/', async function (c) {
     const {message, type} = getFlashMessage(c);
     const loggedUser = await getLoggedUser(c);
@@ -27,10 +26,17 @@ app.get('/register', async function (c) {
 
 app.post('/register', async function (c) {
     const body = await c.req.parseBody();
+    const name = body.name;
+    const surname = body.surname;
     const username = body.username;
     const password = body.password;
+    const password2 = body.password2;
     if (!username || !password) {
         setFlashMessage(c, 'Vyplňte prosím všechna pole.', 'error');
+        return c.redirect('/register');
+    };
+    if (password !== password2) {
+        setFlashMessage(c, 'Hesla se neshodují', 'error');
         return c.redirect('/register');
     };
     try {
@@ -42,7 +48,7 @@ app.post('/register', async function (c) {
         
         const passwordHash = await bcrypt.hash(password, 10);
 
-        await db.insert(users).values({ username, passwordHash });
+        await db.insert(users).values({ name, surname, username, passwordHash });
         setFlashMessage(c, 'Registrace proběhla úspěšně! Nyní se můžete přihlásit.', 'success');
         return c.redirect('/register');
     } catch (error) {
