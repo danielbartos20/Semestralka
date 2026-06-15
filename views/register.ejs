@@ -22,11 +22,20 @@
     <% } %>
     <h1>Registrace</h1>
     <form action="/register" method="post">
-        <label for="username">Uživatelské jméno:</label>
+        <label for="name">Jméno:</label>
+        <input type="text" id="name" name="name" required>
+
+        <label for="surname">Příjmení:</label>
+        <input type="text" id="surname" name="surname" required>
+
+        <label for="username">E-mail:</label>
         <input type="text" id="username" name="username" required>
 
         <label for="password">Heslo:</label>
         <input type="password" id="password" name="password" required>
+
+        <label for="password2">Heslo znovu:</label>
+        <input type="password" id="password2" name="password2" required>
 
         <button type="submit">Registrovat</button>
     </form>

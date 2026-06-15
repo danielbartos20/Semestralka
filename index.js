@@ -3,13 +3,12 @@ import { serve } from '@hono/node-server';
 import ejs from 'ejs';
 import bcrypt from 'bcryptjs';
 import { db } from './db/db.js';
-import { users } from './db/schema.js';
+import { users, chats, chatUsers } from './db/schema.js';
 import { eq } from 'drizzle-orm';
 import { getCookie, setCookie, deleteCookie } from 'hono/cookie';
 
 const app = new Hono();
 const port = 8080;
-
 
 
 app.get('/', async function (c) {
@@ -27,10 +26,17 @@ app.get('/register', async function (c) {
 
 app.post('/register', async function (c) {
     const body = await c.req.parseBody();
+    const name = body.name;
+    const surname = body.surname;
     const username = body.username;
     const password = body.password;
+    const password2 = body.password2;
     if (!username || !password) {
         setFlashMessage(c, 'Vyplňte prosím všechna pole.', 'error');
+        return c.redirect('/register');
+    };
+    if (password !== password2) {
+        setFlashMessage(c, 'Hesla se neshodují', 'error');
         return c.redirect('/register');
     };
     try {
@@ -42,7 +48,7 @@ app.post('/register', async function (c) {
         
         const passwordHash = await bcrypt.hash(password, 10);
 
-        await db.insert(users).values({ username, passwordHash });
+        await db.insert(users).values({ name, surname, username, passwordHash });
         setFlashMessage(c, 'Registrace proběhla úspěšně! Nyní se můžete přihlásit.', 'success');
         return c.redirect('/register');
     } catch (error) {
@@ -51,7 +57,6 @@ app.post('/register', async function (c) {
         return c.redirect('/register');
     };
 });
-
 
 app.get('/login', async function (c) {
     const {message, type} = getFlashMessage(c);
@@ -95,6 +100,34 @@ app.get('/logout', function (c) {
     return c.redirect('/')
 });
 
+app.get('/chats', async function (c) {
+    const loggedUser = await getLoggedUser(c);
+    if (!loggedUser) {
+        setFlashMessage(c, 'Pro zobrazení chatů se musíte přihlásit.', 'error');
+        return c.redirect('/login');
+    }; 
+    const {message, type} = getFlashMessage(c);
+    const allChats = await db.select().from(chats);
+    const html = await ejs.renderFile('./views/chats.ejs', {message, type, user: loggedUser, chats: allChats});
+    return c.html(html);
+});
+
+app.post('/chats', async function (c) {
+    const loggedUser = await getLoggedUser(c);
+    if (!loggedUser) {
+        return c.redirect('/login');
+    };
+    const body = await c.req.parseBody();
+    const name = body.name;
+    if(name) {
+        const result = await db.insert(chats).values({name}).returning();
+        const newChat = result[0];
+        await db.insert(chatUsers).values({chatId: newChat.id, userId: loggedUser.id});
+        setFlashMessage(c, 'Chat vytvořen.', 'success');
+    };
+    return c.redirect('/chats');
+});
+
 
 
 async function getLoggedUser(c) {
@@ -122,7 +155,7 @@ function getFlashMessage(c) {
         type = '';
     };
     return { message, type };
-}
+};
 
 serve({
     fetch: app.fetch,

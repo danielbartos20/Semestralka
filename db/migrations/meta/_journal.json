@@ -8,6 +8,13 @@
       "when": 1781017781208,
       "tag": "0000_nervous_doctor_octopus",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1781533142048,
+      "tag": "0001_panoramic_la_nuit",
+      "breakpoints": true
     }
   ]
 }

@@ -19,10 +19,9 @@
         <div class="message <%= locals.type %>"><%= locals.message %></div>
     <% } %>
 
-    <h1>Vítejte v naší aplikaci!</h1>
-
     <% if (locals.user) { %>
-        <p>Jste přihlášeni jako: <strong><%= user.username %></strong></p>
+        <h1>Vítejte, <%= user.name %>!</h1>
+        <nav><a href="/chats">Seznam chatů</a></nav>
         <nav><a href="/logout">Odhlásit se</a></nav>
     <% } else { %>
         <p>Nejste přihlášeni.</p>
