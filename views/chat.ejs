@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat: <%= chat.name %></title>
+    <style>
+        body { font-family: sans-serif; margin: 2em; max-width: 600px; }
+        #chat-box { height: 400px; overflow-y: scroll; border: 1px solid #ccc; padding: 10px; margin-bottom: 10px; border-radius: 4px; background: #f9f9f9; }
+        .message { margin-bottom: 8px; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+        .username { font-weight: bold; color: #007bff; }
+        form { display: flex; gap: 10px; }
+        input[type="text"] { flex-grow: 1; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+        button { padding: 10px 15px; background-color: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background-color: #218838; }
+        nav { margin-bottom: 20px; }
+        nav a { text-decoration: none; color: #007bff; font-weight: bold; }
+    </style>
+</head>
+<body data-chatid="<%= chat.id %>">
+    <nav><a href="/chats">&larr; Zpět na seznam chatů</a></nav>
+    <h1>Chat: <%= chat.name %></h1>
+
+    <div id="chat-box">
+        <% locals.messages.forEach(function(msg) { %>
+            <div class="message"><span class="username"><%= msg.name %> <%= msg.surname %>:</span> <%= msg.content %></div>
+        <% }); %>
+    </div>
+
+    <form id="chat-form">
+        <input type="text" id="message-input" placeholder="Napište zprávu..." required autocomplete="off">
+        <button type="submit">Odeslat</button>
+    </form>
+
+    <script>
+        const chatId = document.body.dataset.chatid;
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const ws = new WebSocket(`${protocol}//${window.location.host}/ws/chat/${chatId}`);
+        const chatBox = document.getElementById('chat-box');
+        const form = document.getElementById('chat-form');
+        const input = document.getElementById('message-input');
+
+        ws.onmessage = function(event) {
+            const data = JSON.parse(event.data);
+            const div = document.createElement('div');
+            div.className = 'message';
+            div.innerHTML = `<span class="username">${data.name} ${data.surname}:</span> ${data.content}`;
+            chatBox.appendChild(div);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        };
+
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const msg = input.value;
+            if (msg.trim() !== '') {
+                ws.send(msg);
+                input.value = '';
+            };
+        });
+        chatBox.scrollTop = chatBox.scrollHeight;
+    </script>
+</body>
+</html>

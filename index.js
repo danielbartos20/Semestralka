@@ -3,13 +3,15 @@ import { serve } from '@hono/node-server';
 import ejs from 'ejs';
 import bcrypt from 'bcryptjs';
 import { db } from './db/db.js';
-import { users, chats, chatUsers } from './db/schema.js';
+import { users, chats, chatUsers, messages } from './db/schema.js';
 import { eq } from 'drizzle-orm';
 import { getCookie, setCookie, deleteCookie } from 'hono/cookie';
+import { createNodeWebSocket } from '@hono/node-ws';
 
 const app = new Hono();
+const { injectWebSocket, upgradeWebSocket } = createNodeWebSocket({ app });
 const port = 8080;
-
+const activeConnections = {};
 
 app.get('/', async function (c) {
     const {message, type} = getFlashMessage(c);
@@ -128,6 +130,60 @@ app.post('/chats', async function (c) {
     return c.redirect('/chats');
 });
 
+app.get('/chat/:id', async function (c) {
+    const loggedUser = await getLoggedUser(c);
+    if(!loggedUser) {
+        c.redirect('/login');
+    };
+    const chatId = Number(c.req.param('id'));
+    const chatResult = await db.select().from(chats).where(eq(chats.id, chatId)).limit(1);
+    const chat = chatResult[0];
+    if(!chat){
+        setFlashMessage(c, 'Tento chat neexistuje.', 'error');
+        return c.redirect('/chats');
+    };
+    const chatMessages = await db.select({
+        content: messages.content,
+        createdAt: messages.createdAt,
+        name: users.name,
+        surname: users.surname
+    }).from(messages).leftJoin(users, eq(messages.userId, users.id)).where(eq(messages.chatId, chatId));
+    const html = await ejs.renderFile('./views/chat.ejs', {chat, messages: chatMessages, user: loggedUser});
+    return c.html(html);
+});
+
+app.get('/ws/chat/:id', upgradeWebSocket(async function (c) {
+    const loggedUser = await getLoggedUser(c);
+    const chatId = Number(c.req.param('id'));
+        return {
+            onOpen(event, ws) {
+                if (!activeConnections[chatId]) activeConnections[chatId] = new Set();
+                activeConnections[chatId].add({ ws, user: loggedUser });
+            },
+            async onMessage(event, ws) {
+                const content = event.data;
+                if (!content || !loggedUser) return;
+                await db.insert(messages).values({
+                    chatId: chatId,
+                    userId: loggedUser.id,
+                    content: content
+                });
+
+                const msgObject = JSON.stringify({ name: loggedUser.name, surname: loggedUser.surname, content: content });
+                if (activeConnections[chatId]) {
+                    activeConnections[chatId].forEach(client => client.ws.send(msgObject));
+                };
+        },
+        onClose(event, ws) {
+            if (activeConnections[chatId]) {
+                activeConnections[chatId].forEach(client => {
+                    if (client.ws === ws) activeConnections[chatId].delete(client);
+                });
+            };
+        }
+    };
+}));
+
 
 
 async function getLoggedUser(c) {
@@ -157,7 +213,8 @@ function getFlashMessage(c) {
     return { message, type };
 };
 
-serve({
+const server = serve({
     fetch: app.fetch,
     port: port
 });
+injectWebSocket(server);
