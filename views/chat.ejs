@@ -9,21 +9,41 @@
         #chat-box { height: 400px; overflow-y: scroll; border: 1px solid #ccc; padding: 10px; margin-bottom: 10px; border-radius: 4px; background: #f9f9f9; }
         .message { margin-bottom: 8px; border-bottom: 1px solid #eee; padding-bottom: 5px; }
         .username { font-weight: bold; color: #007bff; }
+        .time { color: #888; font-size: 0.9em; margin-right: 5px; }
         form { display: flex; gap: 10px; }
         input[type="text"] { flex-grow: 1; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
         button { padding: 10px 15px; background-color: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; }
         button:hover { background-color: #218838; }
         nav { margin-bottom: 20px; }
         nav a { text-decoration: none; color: #007bff; font-weight: bold; }
+        .flash-message { margin-top: 1em; margin-bottom: 1em; padding: 10px; border-radius: 4px; max-width: 600px; }
+        .success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
     </style>
 </head>
 <body data-chatid="<%= chat.id %>">
     <nav><a href="/chats">&larr; Zpět na seznam chatů</a></nav>
     <h1>Chat: <%= chat.name %></h1>
 
+    <% if (locals.message) { %>
+        <div class="flash-message <%= locals.type %>"><%= locals.message %></div>
+    <% } %>
+
+    <form action="/chat/<%= chat.id %>/add-user" method="post" style="margin-bottom: 20px;">
+        <input type="text" name="username" placeholder="E-mail uživatele..." required>
+        <button type="submit" style="background-color: #007bff;">Přidat uživatele</button>
+    </form>
+
+    <div style="margin-bottom: 15px; padding: 10px; background-color: #e9ecef; border-radius: 4px;">
+        <strong>Členové chatu:</strong>
+        <% locals.members.forEach(function(member) { %>
+            <span style="display: inline-block; background: #fff; padding: 2px 8px; border-radius: 12px; margin-right: 5px; font-size: 0.9em; border: 1px solid #ccc;"><%= member.name %> <%= member.surname %></span>
+        <% }); %>
+    </div>
+
     <div id="chat-box">
         <% locals.messages.forEach(function(msg) { %>
-            <div class="message"><span class="username"><%= msg.name %> <%= msg.surname %>:</span> <%= msg.content %></div>
+            <div class="message"><span class="time">[<%= new Date(msg.createdAt).toLocaleTimeString('cs-CZ', {hour: '2-digit', minute:'2-digit'}) %>]</span> <span class="username"><%= msg.name %> <%= msg.surname %>:</span> <%= msg.content %></div>
         <% }); %>
     </div>
 
@@ -44,7 +64,8 @@
             const data = JSON.parse(event.data);
             const div = document.createElement('div');
             div.className = 'message';
-            div.innerHTML = `<span class="username">${data.name} ${data.surname}:</span> ${data.content}`;
+            const timeString = new Date().toLocaleTimeString('cs-CZ', {hour: '2-digit', minute:'2-digit'});
+            div.innerHTML = `<span class="time">[${timeString}]</span> <span class="username">${data.name} ${data.surname}:</span> ${data.content}`;
             chatBox.appendChild(div);
             chatBox.scrollTop = chatBox.scrollHeight;
         };
