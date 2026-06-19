@@ -7,8 +7,7 @@
     <link rel="stylesheet" href="/public/style.css">
 </head>
 <body>
-    <nav><a href="/">&larr; Zpět na hlavní stránku</a></nav>
-    
+    <%- include('partials/header') %>
     <% if (locals.message) { %>
         <div class="message <%= locals.type %>"><%= locals.message %></div>
     <% } %>

@@ -7,19 +7,28 @@
     <link rel="stylesheet" href="/public/style.css">
 </head>
 <body>
-    <% if (locals.message) { %>
-        <div class="message <%= locals.type %>"><%= locals.message %></div>
-    <% } %>
-    <h1>Přihlášení</h1>
-    <form action="/login" method="post">
-        <label for="username">Uživatelské jméno:</label>
-        <input type="text" id="username" name="username" required>
+    <%- include('partials/header') %>
+    <div class="login-page">
+        <div class="login-card">
+            <% if (locals.message) { %>
+                <div class="message <%= locals.type %>"><%= locals.message %></div>
+            <% } %>
+            <h1>Přihlášení</h1>
+            <form action="/login" method="post" class="login-form">
+                <div class="form-group">
+                    <label for="username">Uživatelské jméno:</label>
+                    <input type="text" id="username" name="username" required>
+                </div>
 
-        <label for="password">Heslo:</label>
-        <input type="password" id="password" name="password" required>
+                <div class="form-group">
+                    <label for="password">Heslo:</label>
+                    <input type="password" id="password" name="password" required>
+                </div>
 
-        <button type="submit">Přihlásit se</button>
-    </form>
-    <p style="margin-top: 20px;">Nemáte ještě účet? <a href="/register">Zaregistrujte se</a>.</p>
+                <button type="submit">Přihlásit se</button>
+            </form>
+            <p class="login-register">Nemáte ještě účet? <a href="/register">Zaregistrujte se</a>.</p>
+        </div>
+    </div>
 </body>
 </html>

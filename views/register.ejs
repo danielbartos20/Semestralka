@@ -7,28 +7,43 @@
     <link rel="stylesheet" href="/public/style.css">
 </head>
 <body>
-    <% if (locals.message) { %>
-        <div class="message <%= locals.type %>"><%= locals.message %></div>
-    <% } %>
-    <h1>Registrace</h1>
-    <form action="/register" method="post">
-        <label for="name">Jméno:</label>
-        <input type="text" id="name" name="name" required>
+    <%- include('partials/header') %>
+    <div class="login-page">
+        <div class="login-card">
+            <% if (locals.message) { %>
+                <div class="message <%= locals.type %>"><%= locals.message %></div>
+            <% } %>
+            <h1>Registrace</h1>
+            <form action="/register" method="post" class="login-form">
+                <div class="form-group">
+                    <label for="name">Jméno:</label>
+                    <input type="text" id="name" name="name" required>
+                </div>
 
-        <label for="surname">Příjmení:</label>
-        <input type="text" id="surname" name="surname" required>
+                <div class="form-group">
+                    <label for="surname">Příjmení:</label>
+                    <input type="text" id="surname" name="surname" required>
+                </div>
 
-        <label for="username">E-mail:</label>
-        <input type="text" id="username" name="username" required>
+                <div class="form-group">
+                    <label for="username">E-mail:</label>
+                    <input type="text" id="username" name="username" required>
+                </div>
 
-        <label for="password">Heslo:</label>
-        <input type="password" id="password" name="password" required>
+                <div class="form-group">
+                    <label for="password">Heslo:</label>
+                    <input type="password" id="password" name="password" required>
+                </div>
 
-        <label for="password2">Heslo znovu:</label>
-        <input type="password" id="password2" name="password2" required>
+                <div class="form-group">
+                    <label for="password2">Heslo znovu:</label>
+                    <input type="password" id="password2" name="password2" required>
+                </div>
 
-        <button type="submit">Registrovat</button>
-    </form>
-
+                <button type="submit">Registrovat</button>
+            </form>
+            <p class="login-register">Už máte účet? <a href="/login">Přihlaste se</a>.</p>
+        </div>
+    </div>
 </body>
 </html>

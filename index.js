@@ -5,7 +5,7 @@ import ejs from 'ejs';
 import bcrypt from 'bcryptjs';
 import { db } from './db/db.js';
 import { users, chats, chatUsers, messages } from './db/schema.js';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, asc } from 'drizzle-orm';
 import { getCookie, setCookie, deleteCookie } from 'hono/cookie';
 import { createNodeWebSocket } from '@hono/node-ws';
 
@@ -162,7 +162,7 @@ app.get('/chat/:id', async function (c) {
         createdAt: messages.createdAt,
         name: users.name,
         surname: users.surname
-    }).from(messages).leftJoin(users, eq(messages.userId, users.id)).where(eq(messages.chatId, chatId));
+    }).from(messages).leftJoin(users, eq(messages.userId, users.id)).where(eq(messages.chatId, chatId)).orderBy(asc(messages.createdAt));
     const members = await db.select({
         name: users.name,
         surname: users.surname
@@ -226,7 +226,7 @@ app.post('/chat/:id/add-user', async function (c) {
         chatId: chatId,
         userId: userToAdd.id
     });
-    setFlashMessage(c, `Uživatel ${userToAdd.name} ${userToAdd.username} přidán.`, 'success');
+    setFlashMessage(c, `Uživatel ${userToAdd.name} ${userToAdd.surname} přidán.`, 'success');
     return c.redirect(`/chat/${chatId}`);
 });
 

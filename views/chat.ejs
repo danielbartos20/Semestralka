@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="/public/style.css">
 </head>
 <body data-chatid="<%= chat.id %>">
-    <nav><a href="/chats">&larr; Zpět na seznam chatů</a></nav>
+    <%- include('partials/header') %>
     <h1>Chat: <%= chat.name %></h1>
 
     <% if (locals.message) { %>
@@ -16,19 +16,43 @@
 
     <form action="/chat/<%= chat.id %>/add-user" method="post" style="margin-bottom: 20px;">
         <input type="text" name="username" placeholder="E-mail uživatele..." required>
-        <button type="submit" style="background-color: #007bff;">Přidat uživatele</button>
+        <button type="submit">Přidat uživatele</button>
     </form>
 
-    <div style="margin-bottom: 15px; padding: 10px; background-color: #e9ecef; border-radius: 4px;">
+    <div class="chat-members">
         <strong>Členové chatu:</strong>
-        <% locals.members.forEach(function(member) { %>
-            <span style="display: inline-block; background: #fff; padding: 2px 8px; border-radius: 12px; margin-right: 5px; font-size: 0.9em; border: 1px solid #ccc;"><%= member.name %> <%= member.surname %></span>
-        <% }); %>
+        <div class="member-list member-list-preview">
+            <% locals.members.slice(0, 3).forEach(function(member) { %>
+                <span class="member-chip"><%= member.name %> <%= member.surname %></span>
+            <% }); %>
+        </div>
+        <% if (locals.members.length > 3) { %>
+            <details class="member-details">
+                <summary>+<%= locals.members.length - 3 %> dalších</summary>
+                <div class="member-list member-list-all">
+                    <% locals.members.forEach(function(member) { %>
+                        <span class="member-chip"><%= member.name %> <%= member.surname %></span>
+                    <% }); %>
+                </div>
+            </details>
+        <% } %>
     </div>
 
     <div id="chat-box">
+        <% let lastDate = null; %>
         <% locals.messages.forEach(function(msg) { %>
-            <div class="message"><span class="time">[<%= new Date(msg.createdAt).toLocaleTimeString('cs-CZ', {hour: '2-digit', minute:'2-digit'}) %>]</span> <span class="username"><%= msg.name %> <%= msg.surname %>:</span> <%= msg.content %></div>
+            <% const msgDate = new Date(msg.createdAt); %>
+            <% const msgDay = msgDate.toLocaleDateString('cs-CZ', { day: '2-digit', month: '2-digit', year: 'numeric' }); %>
+            <% const formattedTime = msgDate.toLocaleTimeString('cs-CZ', { hour: '2-digit', minute:'2-digit' }); %>
+            <% const isToday = msgDay === new Date().toLocaleDateString('cs-CZ', { day: '2-digit', month: '2-digit', year: 'numeric' }); %>
+            <% if (lastDate !== msgDay) { %>
+                <div class="message-day"><%= isToday ? 'Dnes' : msgDay %></div>
+                <% lastDate = msgDay; %>
+            <% } %>
+            <div class="message">
+                <span class="time">[<%= formattedTime %>]</span>
+                <span class="username"><%= msg.name %> <%= msg.surname %>:</span> <%= msg.content %>
+            </div>
         <% }); %>
     </div>
 
@@ -63,6 +87,18 @@
                 input.value = '';
             };
         });
+
+        const details = document.querySelector('.member-details');
+        const previewList = document.querySelector('.member-list-preview');
+        if (details) {
+            details.addEventListener('toggle', function() {
+                if (details.open) {
+                    previewList.style.display = 'none';
+                } else {
+                    previewList.style.display = 'flex';
+                }
+            });
+        };
         chatBox.scrollTop = chatBox.scrollHeight;
     </script>
 </body>

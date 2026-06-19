@@ -3,20 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hlavní stránka</title>
+    <title>WattsUp</title>
     <link rel="stylesheet" href="/public/style.css">
 </head>
 <body>
+    <%- include('partials/header') %>
     <% if (locals.message) { %>
         <div class="message <%= locals.type %>"><%= locals.message %></div>
     <% } %>
 
     <% if (locals.user) { %>
         <h1>Vítejte, <%= user.name %>!</h1>
-        <nav><a href="/chats">Seznam chatů</a></nav>
-        <nav><a href="/logout">Odhlásit se</a></nav>
     <% } else { %>
-        <p>Nejste přihlášeni.</p>
+        <p>Pro vstup do aplikace se musíte přihlásit.</p>
         <nav><a href="/login">Přihlášení</a> | <a href="/register">Registrace</a></nav>
     <% } %>
 </body>
