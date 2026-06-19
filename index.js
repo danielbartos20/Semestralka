@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { serve } from '@hono/node-server';
+import { serveStatic } from '@hono/node-server/serve-static';
 import ejs from 'ejs';
 import bcrypt from 'bcryptjs';
 import { db } from './db/db.js';
@@ -12,6 +13,11 @@ const app = new Hono();
 const { injectWebSocket, upgradeWebSocket } = createNodeWebSocket({ app });
 const port = 8080;
 const activeConnections = {};
+
+app.use('/public/*', serveStatic({ 
+    root: './public',
+    rewriteRequestPath: (path) => path.replace(/^\/public/, '')
+}));
 
 app.get('/', async function (c) {
     const {message, type} = getFlashMessage(c);
