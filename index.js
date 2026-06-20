@@ -14,6 +14,7 @@ const app = new Hono();
 const { injectWebSocket, upgradeWebSocket } = createNodeWebSocket({ app });
 const port = 8080;
 const activeConnections = {};
+const userConnections = {};
 
 app.use('/public/*', serveStatic({ 
     root: './public',
@@ -180,6 +181,7 @@ app.get('/chat/:id', async function (c) {
     };
     const {message, type} = getFlashMessage(c);
     const chatMessages = await db.select({
+        userId: messages.userId,
         content: messages.content,
         createdAt: messages.createdAt,
         name: users.name,
@@ -210,7 +212,7 @@ app.get('/ws/chat/:id', upgradeWebSocket(async function (c) {
                     content: content
                 });
 
-                const msgObject = JSON.stringify({ name: loggedUser.name, surname: loggedUser.surname, content: content });
+                const msgObject = JSON.stringify({ userId: loggedUser.id, name: loggedUser.name, surname: loggedUser.surname, content: content });
                 if (activeConnections[chatId]) {
                     activeConnections[chatId].forEach(client => client.ws.send(msgObject));
                 };
