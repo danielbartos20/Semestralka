@@ -93,7 +93,7 @@ app.post('/login', async function (c) {
             httpOnly: true,
             maxAge: 60*60*24*7
         });
-        setFlashMessage(c, 'Byli jste úspěšně přihlášeni!', 'success');
+        setFlashMessage(c, 'Byli jste úspěšně přihlášeni.', 'success');
         return c.redirect('/');
     } catch (error) {
         console.log('Chyba při přihlašování: ', error);
@@ -113,12 +113,20 @@ app.get('/chats', async function (c) {
     if (!loggedUser) {
         setFlashMessage(c, 'Pro zobrazení chatů se musíte přihlásit.', 'error');
         return c.redirect('/login');
-    }; 
+    };
     const {message, type} = getFlashMessage(c);
-    const userChats = await db.select({
-        id: chats.id,
-        name: chats.name
-    }).from(chats).innerJoin(chatUsers, eq(chats.id, chatUsers.chatId)).where(eq(chatUsers.userId, loggedUser.id));
+    let userChats = [];
+    try {
+        const rows = await db.select({
+            id: chats.id,
+            name: chats.name,
+            creatorId: chats.creatorId
+        }).from(chats).innerJoin(chatUsers, eq(chats.id, chatUsers.chatId)).where(eq(chatUsers.userId, loggedUser.id));
+        userChats = rows || [];
+    } catch (err) {
+        setFlashMessage(c, 'Nepodařilo se načíst chaty.', 'error');
+        userChats = [];
+    };
     const html = await ejs.renderFile('./views/chats.ejs', {message, type, user: loggedUser, chats: userChats});
     return c.html(html);
 });
@@ -131,7 +139,7 @@ app.post('/chats', async function (c) {
     const body = await c.req.parseBody();
     const name = body.name;
     if(name) {
-        const result = await db.insert(chats).values({name}).returning();
+        const result = await db.insert(chats).values({name, creatorId: loggedUser.id}).returning();
         const newChat = result[0];
         await db.insert(chatUsers).values({chatId: newChat.id, userId: loggedUser.id});
         setFlashMessage(c, 'Chat vytvořen.', 'success');
@@ -230,6 +238,96 @@ app.post('/chat/:id/add-user', async function (c) {
     return c.redirect(`/chat/${chatId}`);
 });
 
+app.post('/chat/:id/delete', async function (c) {
+    const loggedUser = await getLoggedUser(c);
+    if(!loggedUser) {
+        return c.redirect('/login');
+    };
+    const chatId = Number(c.req.param('id'));
+    const chatResult = await db.select().from(chats).where(and(eq(chats.id, chatId), eq(chats.creatorId, loggedUser.id))).limit(1);
+    const chat = chatResult[0];
+    if (!chat) {
+        setFlashMessage(c, 'Tento chat smazat nemůžete.', 'error');
+        return c.redirect('/chats');
+    };
+    await db.delete(messages).where(eq(messages.chatId, chatId));
+    await db.delete(chatUsers).where(eq(chatUsers.chatId, chatId));
+    await db.delete(chats).where(eq(chats.id, chatId));
+    setFlashMessage(c, 'Chat byl odstraněn.', 'success');
+    return c.redirect('/chats');
+});
+
+app.post('/chat/:id/leave', async function (c) {
+    const loggedUser = await getLoggedUser(c);
+    if(!loggedUser) {
+        return c.redirect('/login');
+    };
+    const chatId = Number(c.req.param('id'));
+    const membership = await db.select().from(chatUsers).where(and(eq(chatUsers.chatId, chatId), eq(chatUsers.userId, loggedUser.id))).limit(1);
+    if (membership.length === 0) {
+        setFlashMessage(c, 'Do tohoto chatu nepatříte.', 'error');
+        return c.redirect('/chats');
+    };
+    await db.delete(chatUsers).where(and(eq(chatUsers.chatId, chatId), eq(chatUsers.userId, loggedUser.id)));
+    setFlashMessage(c, 'Opustili jste tento chat.', 'success');
+    return c.redirect('/chats');
+});
+
+app.get('/profile', async function (c) {
+    const loggedUser = await getLoggedUser(c);
+    if (!loggedUser) {
+        return c.redirect('/login');
+    };
+    const {message, type} = getFlashMessage(c);
+    const html = await ejs.renderFile('./views/edit-profile.ejs', { message, type, user: loggedUser });
+    return c.html(html);
+});
+
+app.post('/profile', async function (c) {
+    const loggedUser = await getLoggedUser(c);
+    if (!loggedUser) {
+        return c.redirect('/login');
+    };
+    const body = await c.req.parseBody();
+    const name = body.name;
+    const surname = body.surname;
+    const password = body.password;
+    const password2 = body.password2;
+
+    if (!name || !surname) {
+        setFlashMessage(c, 'Jméno a příjmení musí být vyplněné.', 'error');
+        return c.redirect('/profile');
+    };
+
+    try {
+        if (password) {
+            const oldPassword = body.oldPassword;
+            if (!oldPassword) {
+                setFlashMessage(c, 'Pro změnu hesla zadejte prosím staré heslo.', 'error');
+                return c.redirect('/profile');
+            };
+            const matches = await bcrypt.compare(oldPassword, loggedUser.passwordHash);
+            if (!matches) {
+                setFlashMessage(c, 'Vaše aktuální heslo není správné.', 'error');
+                return c.redirect('/profile');
+            };
+            if (password !== password2) {
+                setFlashMessage(c, 'Hesla se neshodují.', 'error');
+                return c.redirect('/profile');
+            };
+            const passwordHash = await bcrypt.hash(password, 10);
+            await db.update(users).set({ name, surname, passwordHash }).where(eq(users.id, loggedUser.id));
+        } else {
+            await db.update(users).set({ name, surname }).where(eq(users.id, loggedUser.id));
+        };
+        setFlashMessage(c, 'Profil byl aktualizován.', 'success');
+        return c.redirect('/profile');
+    } catch (err) {
+        console.error('Chyba při aktualizaci profilu:', err);
+        setFlashMessage(c, 'Nepodařilo se aktualizovat profil.', 'error');
+        return c.redirect('/profile');
+    };
+});
 
 
 async function getLoggedUser(c) {

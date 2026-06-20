@@ -11,6 +11,7 @@ export const users = sqliteTable('users', {
 export const chats = sqliteTable('chats', {
   id: integer('id').primaryKey(),
   name: text('name').notNull(),
+  creatorId: integer('creator_id').notNull().references(() => users.id),
 });
 
 export const chatUsers = sqliteTable('chat_users', {

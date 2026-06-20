@@ -15,6 +15,13 @@
       "when": 1781533142048,
       "tag": "0001_panoramic_la_nuit",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1781939480203,
+      "tag": "0002_glossy_loki",
+      "breakpoints": true
     }
   ]
 }

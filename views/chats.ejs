@@ -21,7 +21,9 @@
 
     <ul>
         <% locals.chats.forEach(function(chat) { %>
-            <li><strong><a href="/chat/<%= chat.id %>"><%= chat.name %></strong></a></li>
+            <li>
+                <strong><a href="/chat/<%= chat.id %>"><%= chat.name %></a></strong>
+            </li>
         <% }); %>
     </ul>
 </body>

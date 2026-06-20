@@ -19,6 +19,16 @@
         <button type="submit">Přidat uživatele</button>
     </form>
 
+    <% if (chat.creatorId === user.id) { %>
+        <form action="/chat/<%= chat.id %>/delete" method="post" style="margin-bottom: 20px;" onsubmit="return confirm('Opravdu chcete tento chat smazat? Tuto akci nelze vrátit zpět.');">
+            <button type="submit" class="danger-button">Odstranit chat</button>
+        </form>
+    <% } else if (user && user.id !== chat.creatorId) { %>
+        <form action="/chat/<%= chat.id %>/leave" method="post" style="margin-bottom: 20px;">
+            <button type="submit" class="secondary-button">Opustit chat</button>
+        </form>
+    <% } %>
+
     <div class="chat-members">
         <strong>Členové chatu:</strong>
         <div class="member-list member-list-preview">
@@ -90,13 +100,15 @@
 
         const details = document.querySelector('.member-details');
         const previewList = document.querySelector('.member-list-preview');
+        const summary = document.querySelector('summary');
         if (details) {
             details.addEventListener('toggle', function() {
                 if (details.open) {
                     previewList.style.display = 'none';
+                    summary.style.display = 'none';
                 } else {
                     previewList.style.display = 'flex';
-                }
+                };
             });
         };
         chatBox.scrollTop = chatBox.scrollHeight;
