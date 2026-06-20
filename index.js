@@ -3,9 +3,10 @@ import { serve } from '@hono/node-server';
 import { serveStatic } from '@hono/node-server/serve-static';
 import ejs from 'ejs';
 import bcrypt from 'bcryptjs';
+import { randomBytes } from 'crypto';
 import { db } from './db/db.js';
-import { users, chats, chatUsers, messages } from './db/schema.js';
-import { eq, and, asc } from 'drizzle-orm';
+import { users, chats, chatUsers, messages, sessions } from './db/schema.js';
+import { eq, and, asc, gt } from 'drizzle-orm';
 import { getCookie, setCookie, deleteCookie } from 'hono/cookie';
 import { createNodeWebSocket } from '@hono/node-ws';
 
@@ -43,6 +44,10 @@ app.post('/register', async function (c) {
         setFlashMessage(c, 'Vyplňte prosím všechna pole.', 'error');
         return c.redirect('/register');
     };
+    if (password.length < 6) {
+        setFlashMessage(c, 'Heslo musí mít alespoň 6 znaků.', 'error');
+        return c.redirect('/register');
+    };
     if (password !== password2) {
         setFlashMessage(c, 'Hesla se neshodují', 'error');
         return c.redirect('/register');
@@ -58,7 +63,7 @@ app.post('/register', async function (c) {
 
         await db.insert(users).values({ name, surname, username, passwordHash });
         setFlashMessage(c, 'Registrace proběhla úspěšně! Nyní se můžete přihlásit.', 'success');
-        return c.redirect('/register');
+        return c.redirect('/login');
     } catch (error) {
         console.error("Chyba při registraci uživatele:", error);
         setFlashMessage(c, 'Při registraci nastala chyba. Zkuste to prosím znovu.', 'error');
@@ -88,9 +93,14 @@ app.post('/login', async function (c) {
             setFlashMessage(c, 'Nesprávné uživatelské jméno nebo heslo.', 'error');
             return c.redirect('/login');
         };
-        setCookie(c, 'user_id', user.id.toString(), {
+        const token = randomBytes(32).toString('hex');
+        const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+        await db.insert(sessions).values({ token, userId: user.id, expiresAt });
+        setCookie(c, 'session_token', token, {
             path: '/',
             httpOnly: true,
+            secure: true,
+            sameSite: 'Strict',
             maxAge: 60*60*24*7
         });
         setFlashMessage(c, 'Byli jste úspěšně přihlášeni.', 'success');
@@ -103,9 +113,13 @@ app.post('/login', async function (c) {
 });
 
 app.get('/logout', function (c) {
-    deleteCookie(c, 'user_id', { path: '/' });
+    const token = getCookie(c, 'session_token');
+    if (token) {
+        db.delete(sessions).where(eq(sessions.token, token)).catch(() => {});
+    };
+    deleteCookie(c, 'session_token', { path: '/' });
     setFlashMessage(c, 'Byli jste úspěšně odhlášeni.', 'success');
-    return c.redirect('/')
+    return c.redirect('/');
 });
 
 app.get('/chats', async function (c) {
@@ -175,7 +189,7 @@ app.get('/chat/:id', async function (c) {
         name: users.name,
         surname: users.surname
     }).from(chatUsers).innerJoin(users, eq(chatUsers.userId, users.id)).where(eq(chatUsers.chatId, chatId));
-    const html = await ejs.renderFile('./views/chat.ejs', {message, type, chat, members, messages: chatMessages, user: loggedUser});
+    const html = await ejs.renderFile('./views/chat.ejs', {activeConnections, message, type, chat, members, messages: chatMessages, user: loggedUser});
     return c.html(html);
 });
 
@@ -306,6 +320,10 @@ app.post('/profile', async function (c) {
                 setFlashMessage(c, 'Pro změnu hesla zadejte prosím staré heslo.', 'error');
                 return c.redirect('/profile');
             };
+            if (oldPassword.length < 6) {
+                setFlashMessage(c, 'Heslo musí mít alespoň 6 znaků.', 'error');
+                return c.redirect('/register');
+            };
             const matches = await bcrypt.compare(oldPassword, loggedUser.passwordHash);
             if (!matches) {
                 setFlashMessage(c, 'Vaše aktuální heslo není správné.', 'error');
@@ -331,17 +349,22 @@ app.post('/profile', async function (c) {
 
 
 async function getLoggedUser(c) {
-    const userId = getCookie(c, 'user_id');
-    if (!userId) {
+    const token = getCookie(c, 'session_token');
+    if (!token) {
         return null;
     };
-    const result = await db.select().from(users).where(eq(users.id, Number(userId))).limit(1);
-    return result[0] || null;
+    const sessionResult = await db.select().from(sessions).where(eq(sessions.token, token)).limit(1);
+    const session = sessionResult[0];
+    if (!session || session.expiresAt < new Date()) {
+        return null;
+    };
+    const userResult = await db.select().from(users).where(eq(users.id, session.userId)).limit(1);
+    return userResult[0] || null;
 };
 
 function setFlashMessage(c, message, type) {
-    setCookie(c, 'flash_message', message, { path: '/' });
-    setCookie(c, 'flash_type', type, { path: '/' });
+    setCookie(c, 'flash_message', message, { path: '/', sameSite: 'Strict' });
+    setCookie(c, 'flash_type', type, { path: '/', sameSite: 'Strict' });
 };
 
 function getFlashMessage(c) {

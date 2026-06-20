@@ -13,10 +13,27 @@
     <% } %>
 
     <% if (locals.user) { %>
-        <h1>Vítejte, <%= user.name %>!</h1>
+        <div class="dashboard-header">
+            <h1>Vítejte, <%= user.name %>!</h1>
+            <p>Vyberte jednu z rychlých akcí pro práci se svými chaty a profilem.</p>
+        </div>
+        <div class="dashboard-menu">
+            <a class="menu-card" href="/chats">
+                <h2>Moje chaty</h2>
+                <p>Prohlédněte si své chaty, pokračujte v konverzacích nebo přidejte nové členy.</p>
+            </a>
+            <a class="menu-card" href="/profile">
+                <h2>Můj profil</h2>
+                <p>Upravte své jméno, příjmení nebo změňte heslo.</p>
+            </a>
+            <a class="menu-card" href="/chats">
+                <h2>Vytvořit nový chat</h2>
+                <p>Založte nový chat a začněte hned komunikovat.</p>
+            </a>
+        </div>
     <% } else { %>
         <p>Pro vstup do aplikace se musíte přihlásit.</p>
-        <nav><a href="/login">Přihlášení</a> | <a href="/register">Registrace</a></nav>
+        <nav><a href="/login">Přihlášení</a><a href="/register">Registrace</a></nav>
     <% } %>
 </body>
 </html>

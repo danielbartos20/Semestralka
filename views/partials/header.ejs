@@ -37,7 +37,7 @@
         <nav class="site-nav">
             <% const currentUser = typeof user !== 'undefined' ? user : locals.user; %>
             <% if (currentUser) { %>
-                Uživatel: <%= currentUser.name %> <%= currentUser.surname %>  |
+                <%= currentUser.name %> <%= currentUser.surname %>  |
                 <a href="/chats">Moje chaty</a>
                 <a href="/profile">Můj profil</a>
                 <a href="/logout">Odhlásit se</a>
