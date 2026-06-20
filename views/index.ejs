@@ -3,29 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hlavní stránka</title>
-    <style>
-        body { font-family: sans-serif; margin: 2em; }
-        .message { margin-top: 1em; padding: 10px; border-radius: 4px; width: 300px; }
-        .success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
-        .error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
-        nav { margin-top: 20px; padding: 10px; background-color: #f8f9fa; border-radius: 4px; display: inline-block; }
-        nav a { margin-right: 15px; text-decoration: none; color: #007bff; font-weight: bold; }
-        nav a:hover { text-decoration: underline; color: #0056b3; }
-    </style>
+    <title>WattsUp</title>
+    <link rel="stylesheet" href="/public/style.css">
 </head>
 <body>
+    <%- include('partials/header') %>
     <% if (locals.message) { %>
         <div class="message <%= locals.type %>"><%= locals.message %></div>
     <% } %>
 
     <% if (locals.user) { %>
-        <h1>Vítejte, <%= user.name %>!</h1>
-        <nav><a href="/chats">Seznam chatů</a></nav>
-        <nav><a href="/logout">Odhlásit se</a></nav>
+        <div class="dashboard-header">
+            <h1>Vítejte, <%= user.name %>!</h1>
+            <p>Vyberte jednu z rychlých akcí pro práci se svými chaty a profilem.</p>
+        </div>
+        <div class="dashboard-menu">
+            <a class="menu-card" href="/chats">
+                <h2>Moje chaty</h2>
+                <p>Prohlédněte si své chaty, pokračujte v konverzacích nebo přidejte nové členy.</p>
+            </a>
+            <a class="menu-card" href="/profile">
+                <h2>Můj profil</h2>
+                <p>Upravte své jméno, příjmení nebo změňte heslo.</p>
+            </a>
+            <a class="menu-card" href="/chats">
+                <h2>Vytvořit nový chat</h2>
+                <p>Založte nový chat a začněte hned komunikovat.</p>
+            </a>
+        </div>
     <% } else { %>
-        <p>Nejste přihlášeni.</p>
-        <nav><a href="/login">Přihlášení</a> | <a href="/register">Registrace</a></nav>
+        <p>Pro vstup do aplikace se musíte přihlásit.</p>
+        <nav><a href="/login">Přihlášení</a><a href="/register">Registrace</a></nav>
     <% } %>
 </body>
 </html>

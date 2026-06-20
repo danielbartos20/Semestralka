@@ -1,0 +1,50 @@
+<header class="site-header">
+    <div class="header-inner">
+        <div class="brand-group">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="13%" height="13%">
+                <defs>
+                    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+                    <feGaussianBlur stdDeviation="30" />
+                    </filter>
+                    
+                    <linearGradient id="bulbGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stop-color="#FFEA00" />
+                    <stop offset="100%" stop-color="#FF9D00" />
+                    </linearGradient>
+    
+                    <mask id="boltMask">
+                    <rect width="500" height="500" fill="#ffffff" />
+                    <polygon points="265,142 215,222 255,222 235,287 295,197 250,197" fill="#000000" />
+                    </mask>
+                </defs>
+                <rect width="500" height="500" rx="110" fill="#1E1E28" />
+                <circle cx="250" cy="212" r="120" fill="#FF9D00" opacity="0.35" filter="url(#glow)" />
+                <g mask="url(#boltMask)">
+                    <path d="M 330 172 L 420 132 L 340 222 Z" fill="url(#bulbGrad)" />
+    
+                    <circle cx="250" cy="212" r="100" fill="url(#bulbGrad)" />
+    
+                    <path d="M 180 282 L 320 282 L 285 347 L 215 347 Z" fill="url(#bulbGrad)" />
+                </g>
+                <g fill="#95A5A6">
+                    <rect x="220" y="347" width="60" height="12" rx="4" />
+                    <rect x="225" y="362" width="50" height="12" rx="4" />
+                    <rect x="235" y="377" width="30" height="12" rx="4" />
+                </g>
+            </svg>
+            <a href="/" class="brand">WattsUp</a>
+        </div>
+        <nav class="site-nav">
+            <% const currentUser = typeof user !== 'undefined' ? user : locals.user; %>
+            <% if (currentUser) { %>
+                <%= currentUser.name %> <%= currentUser.surname %>  |
+                <a href="/chats">Moje chaty</a>
+                <a href="/profile">Můj profil</a>
+                <a href="/logout">Odhlásit se</a>
+            <% } else { %>
+                <a href="/login">Přihlášení</a>
+                <a href="/register">Registrace</a>
+            <% } %>
+        </nav>
+    </div>
+</header>

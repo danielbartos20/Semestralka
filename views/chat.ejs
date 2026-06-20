@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WattsUp | Chat: <%= chat.name %></title>
+    <link rel="stylesheet" href="/public/style.css">
+</head>
+<body data-chatid="<%= chat.id %>">
+    <%- include('partials/header') %>
+    <h1>Chat: <%= chat.name %></h1>
+
+    <% if (locals.message) { %>
+        <div class="flash-message <%= locals.type %>"><%= locals.message %></div>
+    <% } %>
+
+    <form action="/chat/<%= chat.id %>/add-user" method="post" style="margin-bottom: 20px;">
+        <input type="text" name="username" placeholder="E-mail uživatele..." required>
+        <button type="submit">Přidat uživatele</button>
+    </form>
+
+    <% if (chat.creatorId === user.id) { %>
+        <form action="/chat/<%= chat.id %>/delete" method="post" style="margin-bottom: 20px;" onsubmit="return confirm('Opravdu chcete tento chat smazat? Tuto akci nelze vrátit zpět.');">
+            <button type="submit" class="danger-button">Odstranit chat</button>
+        </form>
+    <% } else if (user && user.id !== chat.creatorId) { %>
+        <form action="/chat/<%= chat.id %>/leave" method="post" style="margin-bottom: 20px;">
+            <button type="submit" class="secondary-button">Opustit chat</button>
+        </form>
+    <% } %>
+
+    <div class="chat-members">
+        <strong>Členové chatu:</strong>
+        <div class="member-list member-list-preview">
+            <% locals.members.slice(0, 3).forEach(function(member) { %>
+                <span class="member-chip"><%= member.name %> <%= member.surname %></span>
+            <% }); %>
+        </div>
+        <% if (locals.members.length > 3) { %>
+            <details class="member-details">
+                <summary>+<%= locals.members.length - 3 %> dalších</summary>
+                <div class="member-list member-list-all">
+                    <% locals.members.forEach(function(member) { %>
+                        <span class="member-chip"><%= member.name %> <%= member.surname %></span>
+                    <% }); %>
+                </div>
+            </details>
+        <% } %>
+    </div>
+
+    <div id="chat-box">
+        <% let lastDate = null; %>
+        <% locals.messages.forEach(function(msg) { %>
+            <% const msgDate = new Date(msg.createdAt); %>
+            <% const msgDay = msgDate.toLocaleDateString('cs-CZ', { day: '2-digit', month: '2-digit', year: 'numeric' }); %>
+            <% const formattedTime = msgDate.toLocaleTimeString('cs-CZ', { hour: '2-digit', minute:'2-digit' }); %>
+            <% const isToday = msgDay === new Date().toLocaleDateString('cs-CZ', { day: '2-digit', month: '2-digit', year: 'numeric' }); %>
+            <% if (lastDate !== msgDay) { %>
+                <div class="message-day"><%= isToday ? 'Dnes' : msgDay %></div>
+                <% lastDate = msgDay; %>
+            <% } %>
+            <div class="message <%= msg.userId === user.id ? 'own-message' : '' %>">
+                <span class="time">[<%= formattedTime %>]</span>
+                <span class="username"><%= msg.name %> <%= msg.surname %>:</span> <%= msg.content %>
+            </div>
+        <% }); %>
+    </div>
+
+    <form id="chat-form">
+        <input type="text" id="message-input" placeholder="Napište zprávu..." required autocomplete="off">
+        <button type="submit">Odeslat</button>
+    </form>
+
+    <script>
+        const chatId = document.body.dataset.chatid;
+        const userId = Number('<%= user.id %>');
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const ws = new WebSocket(`${protocol}//${window.location.host}/ws/chat/${chatId}`);
+        const chatBox = document.getElementById('chat-box');
+        const form = document.getElementById('chat-form');
+        const input = document.getElementById('message-input');
+
+        ws.onmessage = function(event) {
+            const data = JSON.parse(event.data);
+            const div = document.createElement('div');
+            div.className = 'message';
+            if (Number(data.userId) === Number(userId)) {
+                div.className = 'message own-message';
+            };
+            const timeString = new Date().toLocaleTimeString('cs-CZ', {hour: '2-digit', minute:'2-digit'});
+            div.innerHTML = `<span class="time">[${timeString}]</span> <span class="username">${data.name} ${data.surname}:</span> ${data.content}`;
+            chatBox.appendChild(div);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        };
+
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const msg = input.value;
+            if (msg.trim() !== '') {
+                ws.send(msg);
+                input.value = '';
+            };
+        });
+
+        const details = document.querySelector('.member-details');
+        const previewList = document.querySelector('.member-list-preview');
+        const summary = document.querySelector('summary');
+        if (details) {
+            details.addEventListener('toggle', function() {
+                if (details.open) {
+                    previewList.style.display = 'none';
+                    summary.style.display = 'none';
+                } else {
+                    previewList.style.display = 'flex';
+                };
+            });
+        };
+        chatBox.scrollTop = chatBox.scrollHeight;
+    </script>
+</body>
+</html>

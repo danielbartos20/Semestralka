@@ -1,0 +1,1 @@
+ALTER TABLE `chats` ADD `creator_id` integer NOT NULL REFERENCES users(id);

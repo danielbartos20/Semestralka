@@ -8,9 +8,18 @@ export const users = sqliteTable('users', {
   passwordHash: text('password_hash').notNull(),
 });
 
+export const sessions = sqliteTable('sessions', {
+  id: integer('id').primaryKey(),
+  token: text('token').notNull().unique(),
+  userId: integer('user_id').notNull().references(() => users.id),
+  expiresAt: integer('expires_at', { mode: 'timestamp' }).notNull(),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+});
+
 export const chats = sqliteTable('chats', {
   id: integer('id').primaryKey(),
   name: text('name').notNull(),
+  creatorId: integer('creator_id').notNull().references(() => users.id),
 });
 
 export const chatUsers = sqliteTable('chat_users', {
